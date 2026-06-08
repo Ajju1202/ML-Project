@@ -9,18 +9,18 @@ if project_root not in sys.path:
 
 from dataclasses import dataclass
 
-from catboost import CatBoostClassifier
+from catboost import CatBoostRegressor
 from sklearn.ensemble import(
-    AdaBoostClassifier,
-    GradientBoostingClassifier,
-    RandomForestClassifier
+    AdaBoostRegressor,
+    GradientBoostingRegressor,
+    RandomForestRegressor
 )
 
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier
-from xgboost import XGBClassifier
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.tree import DecisionTreeRegressor
+from xgboost import XGBRegressor
 
 from src.exception import CustomException
 from src.logger import logging
@@ -48,29 +48,29 @@ class ModelTrainer:
             )
 
             models = {
-                "Random Forest": RandomForestClassifier(),
-                "Decision Tree": DecisionTreeClassifier(),
-                "Gradient Boosting": GradientBoostingClassifier(),
-                "K-Neighbors Classifier": KNeighborsClassifier(),
-                "Logistic Regression": LogisticRegression(),
-                "XGB Classifier": XGBClassifier(),
-                "CatBoost Classifier": CatBoostClassifier(verbose=False)
+                "Random Forest": RandomForestRegressor(),
+                "Decision Tree": DecisionTreeRegressor(),
+                "Gradient Boosting": GradientBoostingRegressor(),
+                "K-Neighbors Regressor": KNeighborsRegressor(),
+                "Linear Regression": LinearRegression(),
+                "XGB Regressor": XGBRegressor(),
+                "CatBoost Regressor": CatBoostRegressor(verbose=False)
             }
 
             model_report: dict = evaluate_models(X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test, models=models)
 
-            best_model_score = max(sorted(model_report.values()))
-
-            best_model_name = list(model_report.keys())[
-                list(model_report.values()).index(best_model_score)
-            ]
+            # Extract test scores from the nested dictionary
+            test_scores = {model_name: scores['test'] for model_name, scores in model_report.items()}
+            
+            best_model_score = max(test_scores.values())
+            best_model_name = list(test_scores.keys())[list(test_scores.values()).index(best_model_score)]
 
             best_model = models[best_model_name]
 
             if best_model_score < 0.6:
                 raise CustomException("No best model found")
 
-            logging.info(f"Best found model on both training and testing dataset is {best_model_name} with accuracy score: {best_model_score}")
+            logging.info(f"Best found model on both training and testing dataset is {best_model_name} with R2 score: {best_model_score}")
 
             save_object(
                 file_path=self.model_trainer_config.trained_model_file_path,
